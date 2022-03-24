@@ -7,18 +7,16 @@ import json
 import re
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
-import simplejson
-import sys
+
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-k", "--key", default='/Users/gb/mastermind-246704-5b556751eeba.json')
 parser.add_argument("-u", "--url", required=True)
 parser.add_argument("-x", "--method", default='POST')
+parser.add_argument("-t", "--test", default='')
 parser.add_argument("-s", "--scope", default='cloud-platform')
 parser.add_argument("-i", "--input", help="List of subdomains input", type=argparse.FileType('r'), required=True)
-parser.add_argument("-o", "--output",
-                      help="Output location for altered subdomains",default='-',
-                      type=argparse.FileType('w'))
 args = parser.parse_args()
 
 CREDENTIAL_SCOPES = ["https://www.googleapis.com/auth/" + args.scope]
@@ -64,11 +62,7 @@ def bruteforce(z):
   test = json.dumps(z, indent=4)
   headers = {"content-type": "application/json", "authorization": "Bearer " + get_service_account_token()}
   r = http.request(args.method, args.url, headers=headers, data=test)
-  try:
-    j = r.json()
-  except simplejson.errors.JSONDecodeError:
-    print(r.text)
-    sys.exit(-1)
+  j = r.json()
   if not "details" in j['error']:
     print(r.text)
     return {}
@@ -84,30 +78,15 @@ def bruteforce(z):
 
   return VALID
 
-d = dict.fromkeys(TAGS, 452342342235343404294885)
+d = dict.fromkeys(TAGS, -452342342235343404294885)
 
-a_dict = bruteforce(d)
-
-count = 0
-while True:
-  done = 0
-  for key in list(a_dict):
-    if not key.count(".") == count:
-      continue
-    if not 'type.googleapis.com' in a_dict[key]:
-      continue
-    if "[" in key:
-      continue
-
-    print(key)
-    x = bruteforce(string_to_dict(key, d))
-    a_dict.update(x)
-    done = done+1
-
-  if done == 0:
-    break
-  count = count + 1
+if not args.test:
+  a_dict = bruteforce(d)
+else:
+  a_dict = bruteforce(string_to_dict(args.test, d))
 
 for key in sorted(list(a_dict)):
   print(key, '->', a_dict[key])
-  args.output.write(str(key + '->'+ a_dict[key]+"\n"))
+
+
+
